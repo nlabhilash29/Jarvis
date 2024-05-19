@@ -1,0 +1,57 @@
+import os
+from dotenv import load_dotenv
+from crewai import Agent, Task, Crew, Process
+from crewai_tools import SerperDevTool
+def main():
+    print("Script is running")
+    # Load environment variables from the .env file
+    load_dotenv()
+    # Read the API keys from the environment
+    openai_api_key = os.getenv('OPENAI_API_KEY')
+    serper_api_key = os.getenv('SERPER_API_KEY')
+    if not openai_api_key or not serper_api_key:
+        print("API keys are not set properly")
+        return
+    try:
+        print("Creating search tool")
+        search_tool = SerperDevTool()
+        print("Creating researcher agent")
+        researcher = Agent(
+            role='Senior Researcher',
+            goal='Create a brief about how companies in the HR tech space are leveraging AI',
+            verbose=True,
+            memory=True,
+            backstory=(
+                "Driven by curiosity, you're at the forefront of"
+                "innovation, eager to explore and share knowledge that could change"
+                "the world."
+            ),
+            tools=[search_tool],
+            allow_delegation=True
+        )
+        print("Defining research task")
+        research_task = Task(
+            description=(
+                "Identify the next big trend in AI."
+                "Focus on identifying pros and cons and the overall narrative."
+                "Your final report should clearly articulate the key points,"
+                "its market opportunities, and potential risks."
+            ),
+            expected_output='A comprehensive 3 paragraphs long report on the latest AI trends in sourcing candidates.',
+            tools=[search_tool],
+            agent=researcher,
+        )
+        print("Creating crew")
+        crew = Crew(
+            agents=[researcher],
+            tasks=[research_task],
+            process=Process.sequential  # Optional: Sequential task execution is default
+        )
+        print("Kicking off the crew")
+        result = crew.kickoff(inputs={'topic': 'AI in healthcare'})
+        print(result)
+    except Exception as e:
+        print(f"An error occurred: {e}")
+if __name__ == "__main__":
+    main()
+
